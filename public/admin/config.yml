@@ -1,0 +1,52 @@
+backend:
+  name: github
+  repo: mrbull001/mrb
+  branch: main
+
+media_folder: "public/images"
+public_folder: "/images"
+
+collections:
+  - name: "games"
+    label: "Games"
+    files:
+      - file: "public/data/games.json"
+        label: "Game List"
+        name: "games"
+        fields:
+          - label: "Games"
+            name: "games"
+            widget: "list"
+            fields:
+              - { label: "ID", name: "id", widget: "string" }
+
+              - label: "Name"
+                name: "name"
+                widget: "object"
+                fields:
+                  - { label: "VI", name: "vi", widget: "string" }
+                  - { label: "EN", name: "en", widget: "string" }
+
+              - label: "Platforms"
+                name: "platforms"
+                widget: "list"
+
+              - label: "Steps"
+                name: "steps"
+                widget: "object"
+                fields:
+                  - { label: "VI", name: "vi", widget: "list" }
+                  - { label: "EN", name: "en", widget: "list" }
+
+              - label: "Login Options"
+                name: "loginOptions"
+                widget: "list"
+
+              - label: "Warning"
+                name: "warning"
+                widget: "object"
+                fields:
+                  - { label: "VI", name: "vi", widget: "string" }
+                  - { label: "EN", name: "en", widget: "string" }
+
+              - { label: "Video URL", name: "video", widget: "string" }
