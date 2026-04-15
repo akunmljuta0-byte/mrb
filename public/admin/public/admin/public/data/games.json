@@ -1,0 +1,9 @@
+{
+  "games": [
+    {
+      "id": "1",
+      "name": "Game Demo",
+      "desc": "Test CMS working"
+    }
+  ]
+}
