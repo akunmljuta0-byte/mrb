@@ -1,0 +1,24 @@
+backend:
+  name: github
+  repo: akunmljuta0-byte/mrb
+  branch: main
+  auth_type: implicit
+
+media_folder: "public/images"
+public_folder: "/images"
+
+collections:
+  - name: "games"
+    label: "Games"
+    files:
+      - file: "public/data/games.json"
+        label: "Game List"
+        name: "games"
+        fields:
+          - label: "Games"
+            name: "games"
+            widget: "list"
+            fields:
+              - { label: "ID", name: "id", widget: "string" }
+              - { label: "Name", name: "name", widget: "string" }
+              - { label: "Description", name: "desc", widget: "text" }
