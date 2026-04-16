@@ -1,17 +1,13 @@
 {
   "games": [
     {
-      "id": "game-demo",
-      "name": "Game Demo",
-      "platform": "Android",
+      "publisher": "IGG",
+      "name": "Lords Mobile",
+      "platform": "All platform",
       "loginOption": "Unlink",
       "warning": "Không chia sẻ tài khoản cho người khác.",
-      "steps": [
-        "Mở game",
-        "Chọn đăng nhập",
-        "Nhập tài khoản"
-      ],
-      "image": "https://via.placeholder.com/600x300?text=Game+Demo",
+      "steps": ["Mở game", "Chọn đăng nhập", "Nhập tài khoản"],
+      "image": "https://via.placeholder.com/600x300?text=Lords+Mobile",
       "video": "https://www.youtube.com/embed/dQw4w9WgXcQ"
     }
   ]
