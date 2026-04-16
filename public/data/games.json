@@ -1,9 +1,18 @@
 {
   "games": [
     {
-      "id": "1",
+      "id": "game-demo",
       "name": "Game Demo",
-      "desc": "CMS hoạt động"
+      "platform": "Android",
+      "loginOption": "Unlink",
+      "warning": "Không chia sẻ tài khoản cho người khác.",
+      "steps": [
+        "Mở game",
+        "Chọn đăng nhập",
+        "Nhập tài khoản"
+      ],
+      "image": "https://via.placeholder.com/600x300?text=Game+Demo",
+      "video": "https://www.youtube.com/embed/dQw4w9WgXcQ"
     }
   ]
 }
