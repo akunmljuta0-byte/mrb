@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 type GameItem = {
-  id: string;
+  publisher: string;
   name: string;
   platform: string;
   loginOption: string;
@@ -18,9 +18,9 @@ type GamesData = {
 };
 
 const createEmptyGame = (): GameItem => ({
-  id: "",
+  publisher: "",
   name: "",
-  platform: "Android",
+  platform: "All platform",
   loginOption: "Unlink",
   warning: "",
   steps: ["", "", ""],
@@ -31,13 +31,13 @@ const createEmptyGame = (): GameItem => ({
 export default function AdminPage() {
   const [games, setGames] = useState<GameItem[]>([
     {
-      id: "game-demo",
-      name: "Game Demo",
+      publisher: "IGG",
+      name: "Lords Mobile",
       platform: "Android",
       loginOption: "Unlink",
       warning: "Không chia sẻ tài khoản cho người khác.",
       steps: ["Mở game", "Chọn đăng nhập", "Nhập tài khoản"],
-      image: "https://via.placeholder.com/600x300?text=Game+Demo",
+      image: "https://via.placeholder.com/600x300?text=Lords+Mobile",
       video: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     },
   ]);
@@ -77,9 +77,13 @@ export default function AdminPage() {
   }
 
   async function copyJson() {
-    await navigator.clipboard.writeText(prettyJson);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
+    try {
+      await navigator.clipboard.writeText(prettyJson);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      setCopied(false);
+    }
   }
 
   function downloadJson() {
@@ -118,16 +122,22 @@ export default function AdminPage() {
             background: "#fff",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: 16,
+            }}
+          >
             <h2 style={{ fontSize: 24, fontWeight: 700 }}>Danh sách game</h2>
-            <button onClick={addGame} style={primaryBtn}>
+            <button onClick={addGame} style={primaryBtn} type="button">
               + Thêm game
             </button>
           </div>
 
           {games.map((game, index) => (
             <div
-              key={index}
+              key={`${game.publisher}-${game.name}-${index}`}
               style={{
                 border: "1px solid #e5e5e5",
                 borderRadius: 12,
@@ -136,19 +146,31 @@ export default function AdminPage() {
                 background: "#fafafa",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: 12,
+                }}
+              >
                 <strong>Game #{index + 1}</strong>
-                <button onClick={() => removeGame(index)} style={dangerBtn}>
+                <button
+                  onClick={() => removeGame(index)}
+                  style={dangerBtn}
+                  type="button"
+                >
                   Xóa
                 </button>
               </div>
 
-              <Label title="ID">
+              <Label title="Publisher">
                 <input
-                  value={game.id}
-                  onChange={(e) => updateField(index, "id", e.target.value)}
+                  value={game.publisher}
+                  onChange={(e) =>
+                    updateField(index, "publisher", e.target.value)
+                  }
                   style={inputStyle}
-                  placeholder="game-demo"
+                  placeholder="VD: IGG, Garena, Tencent"
                 />
               </Label>
 
@@ -164,9 +186,12 @@ export default function AdminPage() {
               <Label title="Platform">
                 <select
                   value={game.platform}
-                  onChange={(e) => updateField(index, "platform", e.target.value)}
+                  onChange={(e) =>
+                    updateField(index, "platform", e.target.value)
+                  }
                   style={inputStyle}
                 >
+                  <option>All platform</option>
                   <option>Android</option>
                   <option>iOS</option>
                   <option>PC</option>
@@ -192,7 +217,9 @@ export default function AdminPage() {
               <Label title="Warning">
                 <textarea
                   value={game.warning}
-                  onChange={(e) => updateField(index, "warning", e.target.value)}
+                  onChange={(e) =>
+                    updateField(index, "warning", e.target.value)
+                  }
                   rows={3}
                   style={textareaStyle}
                   placeholder="Nội dung cảnh báo"
@@ -265,10 +292,10 @@ export default function AdminPage() {
           </h2>
 
           <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-            <button onClick={copyJson} style={primaryBtn}>
+            <button onClick={copyJson} style={primaryBtn} type="button">
               {copied ? "Đã copy" : "Copy JSON"}
             </button>
-            <button onClick={downloadJson} style={secondaryBtn}>
+            <button onClick={downloadJson} style={secondaryBtn} type="button">
               Tải games.json
             </button>
           </div>
