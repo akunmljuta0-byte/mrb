@@ -87,14 +87,27 @@ export default function AdminPage() {
   }
 
   function downloadJson() {
-    const blob = new Blob([prettyJson], { type: "application/json" });
+  try {
+    const blob = new Blob([prettyJson], {
+      type: "application/json;charset=utf-8",
+    });
+
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "games.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "games.json";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
+  } catch (error) {
+    alert("Không tải được file. Hãy dùng Copy JSON rồi dán thủ công.");
+    console.error(error);
   }
+}
 
   return (
     <div style={{ maxWidth: 1280, margin: "0 auto", padding: 24 }}>
