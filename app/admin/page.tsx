@@ -99,10 +99,10 @@ export default function AdminPage() {
   return (
     <div style={{ maxWidth: 1280, margin: "0 auto", padding: 24 }}>
       <h1 style={{ fontSize: 34, fontWeight: 700, marginBottom: 8 }}>
-        Admin Form Pro
+        Admin Form Pro v99 hướng dẫn
       </h1>
       <p style={{ color: "#555", marginBottom: 24 }}>
-        Nhập nội dung game, sau đó tải file <code>games.json</code> và thay vào
+        Hướng dẫn nhập nội dung game, tải file <code>games.json</code> và cập nhật vào
         <code> public/data/games.json</code>.
       </p>
 
