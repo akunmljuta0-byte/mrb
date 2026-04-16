@@ -1,7 +1,7 @@
 import gamesData from "../public/data/games.json";
 
 type GameItem = {
-  id: string;
+  Publisher: string;
   name: string;
   platform: string;
   loginOption: string;
