@@ -1,7 +1,7 @@
 import gamesData from "../public/data/games.json";
 
 type GameItem = {
-  ID: string;
+  publisher: string;
   name: string;
   platform: string;
   loginOption: string;
@@ -30,9 +30,9 @@ export default function Home() {
           gap: 20,
         }}
       >
-        {games.map((game) => (
+        {games.map((game, index) => (
           <div
-            key={game.id}
+            key={`${game.publisher}-${game.name}-${index}`}
             style={{
               border: "1px solid #ddd",
               borderRadius: 14,
@@ -53,7 +53,7 @@ export default function Home() {
 
             <div style={{ padding: 16 }}>
               <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>
-                ID: {game.id}
+                Publisher: {game.publisher}
               </div>
 
               <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
