@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
 
 type GameItem = {
   publisher: string;
@@ -82,18 +81,16 @@ export default function HomePage() {
         .hero-bg::before {
           content: '';
           position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: radial-gradient(ellipse at 30% 40%, rgba(124,58,237,0.12) 0%, transparent 60%),
-                      radial-gradient(ellipse at 70% 60%, rgba(168,85,247,0.08) 0%, transparent 60%);
+          top: -50%; left: -50%;
+          width: 200%; height: 200%;
+          background:
+            radial-gradient(ellipse at 30% 40%, rgba(124,58,237,0.12) 0%, transparent 60%),
+            radial-gradient(ellipse at 70% 60%, rgba(168,85,247,0.08) 0%, transparent 60%);
           pointer-events: none;
         }
         .grid-overlay {
-          position: absolute;
-          inset: 0;
-          background-image: 
+          position: absolute; inset: 0;
+          background-image:
             linear-gradient(rgba(124,58,237,0.05) 1px, transparent 1px),
             linear-gradient(90deg, rgba(124,58,237,0.05) 1px, transparent 1px);
           background-size: 40px 40px;
@@ -108,7 +105,7 @@ export default function HomePage() {
           font-family: 'Rajdhani', sans-serif;
           font-size: 16px;
           font-weight: 500;
-          padding: 12px 18px;
+          padding: 12px 18px 12px 44px;
           outline: none;
           transition: border-color 0.2s, box-shadow 0.2s;
           width: 100%;
@@ -151,7 +148,6 @@ export default function HomePage() {
           outline: none;
           cursor: pointer;
         }
-        .select-filter:focus { border-color: var(--accent2); }
         .select-filter option { background: var(--bg3); }
 
         .game-card {
@@ -241,11 +237,7 @@ export default function HomePage() {
           padding: 8px 10px;
           line-height: 1.4;
         }
-        .steps-mini {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
+        .steps-mini { display: flex; flex-direction: column; gap: 4px; }
         .steps-mini-label {
           color: var(--muted);
           font-size: 11px;
@@ -295,12 +287,6 @@ export default function HomePage() {
         }
         .detail-btn:hover { opacity: 0.85; transform: scale(1.02); }
 
-        .empty-state {
-          text-align: center;
-          padding: 80px 20px;
-          color: var(--muted);
-        }
-
         .count-badge {
           background: rgba(124,58,237,0.2);
           border: 1px solid var(--border);
@@ -323,35 +309,70 @@ export default function HomePage() {
         <div className="grid-overlay" />
         <div style={{ position: "relative", maxWidth: 960, margin: "0 auto", textAlign: "center" }}>
           <div style={{ marginBottom: 8 }}>
-            <span style={{ color: "var(--accent2)", fontFamily: "Orbitron", fontSize: 11, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>
+            <span style={{
+              color: "var(--accent2)",
+              fontFamily: "Orbitron",
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: 3,
+              textTransform: "uppercase"
+            }}>
               ▸ GAME GUIDE SYSTEM
             </span>
           </div>
-          <h1 className="orbitron" style={{ fontSize: "clamp(28px, 5vw, 52px)", fontWeight: 900, color: "#fff", lineHeight: 1.1, marginBottom: 16 }}>
+          <h1 className="orbitron" style={{
+            fontSize: "clamp(28px, 5vw, 52px)",
+            fontWeight: 900,
+            color: "#fff",
+            lineHeight: 1.1,
+            marginBottom: 16
+          }}>
             HƯỚNG DẪN{" "}
-            <span style={{ background: "linear-gradient(90deg, #7c3aed, #c084fc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <span style={{
+              background: "linear-gradient(90deg, #7c3aed, #c084fc)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent"
+            }}>
               ĐĂNG NHẬP GAME
             </span>
           </h1>
-          <p style={{ color: "var(--muted)", fontSize: 16, fontWeight: 500, maxWidth: 480, margin: "0 auto 32px" }}>
+          <p style={{
+            color: "var(--muted)",
+            fontSize: 16,
+            fontWeight: 500,
+            maxWidth: 480,
+            margin: "0 auto 32px"
+          }}>
             Hướng dẫn chi tiết từng bước đăng nhập cho các tựa game phổ biến
           </p>
 
           {/* SEARCH */}
           <div style={{ maxWidth: 520, margin: "0 auto 24px", position: "relative" }}>
-            <span style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "var(--muted)", fontSize: 18 }}>⌕</span>
+            <span style={{
+              position: "absolute",
+              left: 16,
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "var(--muted)",
+              fontSize: 18,
+              pointerEvents: "none"
+            }}>⌕</span>
             <input
               className="search-input"
               placeholder="Tìm kiếm game..."
-              style={{ paddingLeft: 44 }}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          {/* FILTERS */}
+          {/* PLATFORM FILTER */}
           <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
-            <div className="platform-scroll" style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+            <div className="platform-scroll" style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              justifyContent: "center"
+            }}>
               {["Tất cả", ...PLATFORMS].map((p) => (
                 <button
                   key={p}
@@ -362,8 +383,12 @@ export default function HomePage() {
                 </button>
               ))}
             </div>
+
+            {/* PUBLISHER FILTER */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ color: "var(--muted)", fontSize: 13, fontWeight: 600 }}>Publisher:</span>
+              <span style={{ color: "var(--muted)", fontSize: 13, fontWeight: 600 }}>
+                Publisher:
+              </span>
               <select
                 className="select-filter"
                 value={publisherFilter}
@@ -378,10 +403,18 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* MAIN */}
+      {/* MAIN CONTENT */}
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 20px" }}>
-        {/* COUNT + ADMIN LINK */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+
+        {/* TOP BAR */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 24,
+          flexWrap: "wrap",
+          gap: 12
+        }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span className="orbitron" style={{ color: "var(--text)", fontWeight: 700, fontSize: 15 }}>
               DANH SÁCH GAME
@@ -400,7 +433,6 @@ export default function HomePage() {
               fontWeight: 700,
               padding: "8px 16px",
               textDecoration: "none",
-              transition: "color 0.2s, border-color 0.2s",
             }}
           >
             ⚙ ADMIN
@@ -409,21 +441,31 @@ export default function HomePage() {
 
         {/* LOADING */}
         {loading && (
-          <div style={{ textAlign: "center", padding: 80, color: "var(--muted)", fontFamily: "Orbitron", fontSize: 14 }}>
+          <div style={{
+            textAlign: "center",
+            padding: 80,
+            color: "var(--muted)",
+            fontFamily: "Orbitron",
+            fontSize: 14
+          }}>
             LOADING...
           </div>
         )}
 
         {/* EMPTY */}
         {!loading && filtered.length === 0 && (
-          <div className="empty-state">
+          <div style={{ textAlign: "center", padding: "80px 20px", color: "var(--muted)" }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🎮</div>
-            <div className="orbitron" style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Không tìm thấy game</div>
-            <div style={{ fontSize: 14 }}>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</div>
+            <div className="orbitron" style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
+              Không tìm thấy game
+            </div>
+            <div style={{ fontSize: 14 }}>
+              Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
+            </div>
           </div>
         )}
 
-        {/* GRID */}
+        {/* GAME GRID */}
         {!loading && filtered.length > 0 && (
           <div style={{
             display: "grid",
@@ -432,26 +474,37 @@ export default function HomePage() {
           }}>
             {filtered.map((game, i) => (
               <div className="game-card" key={i}>
+
+                {/* IMAGE */}
                 <div className="card-img-wrap">
                   {game.image ? (
                     <img src={game.image} alt={game.name} loading="lazy" />
                   ) : (
-                    <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #1a1a28, #0f0a1f)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{
+                      width: "100%", height: "100%",
+                      background: "linear-gradient(135deg, #1a1a28, #0f0a1f)",
+                      display: "flex", alignItems: "center", justifyContent: "center"
+                    }}>
                       <span style={{ fontSize: 48 }}>🎮</span>
                     </div>
                   )}
                   <span className="platform-badge">{game.platform}</span>
                 </div>
+
+                {/* BODY */}
                 <div className="card-body">
                   <div className="card-publisher">{game.publisher}</div>
                   <div className="card-name">{game.name}</div>
+
                   <div className="login-tag">
                     <span>🔑</span>
                     {game.loginOption}
                   </div>
+
                   {game.warning && (
                     <div className="warning-box">⚠ {game.warning}</div>
                   )}
+
                   {game.steps.length > 0 && (
                     <div className="steps-mini">
                       <div className="steps-mini-label">Các bước</div>
@@ -462,16 +515,21 @@ export default function HomePage() {
                         </div>
                       ))}
                       {game.steps.length > 3 && (
-                        <div style={{ color: "var(--accent2)", fontSize: 12, fontWeight: 600, marginTop: 2 }}>
+                        <div style={{
+                          color: "var(--accent2)",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          marginTop: 2
+                        }}>
                           +{game.steps.length - 3} bước nữa...
                         </div>
                       )}
                     </div>
                   )}
+
                   <Link
                     href={`/game/${encodeURIComponent(game.publisher)}/${encodeURIComponent(game.name)}`}
                     className="detail-btn"
-                    style={{ display: "block", marginTop: "auto" }}
                   >
                     XEM CHI TIẾT →
                   </Link>
@@ -483,8 +541,16 @@ export default function HomePage() {
       </div>
 
       {/* FOOTER */}
-      <div style={{ borderTop: "1px solid var(--border)", padding: "24px 20px", textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
-        <span className="orbitron" style={{ color: "var(--accent2)", fontWeight: 700 }}>GAME GUIDE SYSTEM</span>
+      <div style={{
+        borderTop: "1px solid var(--border)",
+        padding: "24px 20px",
+        textAlign: "center",
+        color: "var(--muted)",
+        fontSize: 13
+      }}>
+        <span className="orbitron" style={{ color: "var(--accent2)", fontWeight: 700 }}>
+          GAME GUIDE SYSTEM
+        </span>
         {" "}— Hướng dẫn đăng nhập game
       </div>
     </div>
