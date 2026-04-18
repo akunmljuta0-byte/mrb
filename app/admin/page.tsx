@@ -1,413 +1,414 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import type { GameItem } from "@/types/game";
+import {
+  createEmptyGame,
+  parseGamesData,
+  PLATFORM_OPTIONS,
+  sanitizeGame,
+} from "@/lib/game-utils";
 
-type GameItem = {
-  publisher: string;
-  name: string;
-  platform: string;
-  loginOption: string;
-  warning: string;
-  steps: string[];
-  image: string;
-  video: string;
-};
+function getDataUrlCandidates(): string[] {
+  if (typeof window === "undefined") {
+    return ["/data/games.json"];
+  }
 
-type GamesData = {
-  games: GameItem[];
-};
+  const pathParts = window.location.pathname.split("/").filter(Boolean);
+  const firstSegment = pathParts[0];
+  const candidates = ["/data/games.json", "../data/games.json", "./data/games.json"];
 
-const createEmptyGame = (): GameItem => ({
-  publisher: "",
-  name: "",
-  platform: "All platform",
-  loginOption: "Unlink",
-  warning: "",
-  steps: ["", "", ""],
-  image: "",
-  video: "",
-});
+  if (firstSegment && firstSegment !== "admin" && firstSegment !== "game") {
+    candidates.unshift(`/${firstSegment}/data/games.json`);
+  }
+
+  return Array.from(new Set(candidates));
+}
 
 export default function AdminPage() {
-  const [games, setGames] = useState<GameItem[]>([
-    {
-      publisher: "IGG",
-      name: "Lords Mobile",
-      platform: "Android",
-      loginOption: "Unlink",
-      warning: "Không chia sẻ tài khoản cho người khác.",
-      steps: ["Mở game", "Chọn đăng nhập", "Nhập tài khoản"],
-      image: "https://via.placeholder.com/600x300?text=Lords+Mobile",
-      video: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    },
-  ]);
+  const [games, setGames] = useState<GameItem[]>([]);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<string>("Ready");
+  const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    void autoLoadGames();
+  }, []);
 
-  const jsonOutput = useMemo<GamesData>(() => ({ games }), [games]);
-  const prettyJson = useMemo(
-    () => JSON.stringify(jsonOutput, null, 2),
-    [jsonOutput]
-  );
-
-  function updateField(index: number, key: keyof GameItem, value: string) {
-    setGames((prev) => {
-      const next = [...prev];
-      next[index] = { ...next[index], [key]: value };
-      return next;
-    });
-  }
-
-  function updateStep(index: number, stepIndex: number, value: string) {
-    setGames((prev) => {
-      const next = [...prev];
-      const nextSteps = [...next[index].steps];
-      nextSteps[stepIndex] = value;
-      next[index] = { ...next[index], steps: nextSteps };
-      return next;
-    });
-  }
-
-  function addGame() {
-    setGames((prev) => [...prev, createEmptyGame()]);
-  }
-
-  function removeGame(index: number) {
-    setGames((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  async function copyJson() {
+  async function autoLoadGames(): Promise<void> {
+    setLoading(true);
     try {
-      await navigator.clipboard.writeText(prettyJson);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
-    } catch {
-      setCopied(false);
+      let payload: unknown = null;
+      let loaded = false;
+
+      for (const url of getDataUrlCandidates()) {
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) {
+          continue;
+        }
+        payload = (await response.json()) as unknown;
+        loaded = true;
+        break;
+      }
+
+      if (!loaded) {
+        throw new Error("Không đọc được games.json");
+      }
+
+      const parsed = parseGamesData(payload);
+      setGames(parsed.games);
+      setStatus(`Loaded ${parsed.games.length} game(s) từ games.json`);
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? `Auto-load lỗi: ${error.message}`
+          : "Auto-load lỗi không xác định."
+      );
+    } finally {
+      setLoading(false);
     }
   }
 
-  function downloadJson() {
-  try {
-    const blob = new Blob([prettyJson], {
-      type: "application/json;charset=utf-8",
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "games.json";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 1000);
-  } catch (error) {
-    alert("Không tải được file. Hãy dùng Copy JSON rồi dán thủ công.");
-    console.error(error);
+  function addGame(): void {
+    setGames((prev) => [...prev, createEmptyGame()]);
+    setStatus("Đã thêm game mới.");
   }
-}
+
+  function removeGame(index: number): void {
+    setGames((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+    setStatus("Đã xóa game.");
+  }
+
+  function updateField<K extends keyof GameItem>(
+    index: number,
+    field: K,
+    value: GameItem[K]
+  ): void {
+    setGames((prev) =>
+      prev.map((game, itemIndex) =>
+        itemIndex === index ? { ...game, [field]: value } : game
+      )
+    );
+  }
+
+  function updateStep(gameIndex: number, stepIndex: number, value: string): void {
+    setGames((prev) =>
+      prev.map((game, itemIndex) => {
+        if (itemIndex !== gameIndex) {
+          return game;
+        }
+
+        const nextSteps = game.steps.map((step, currentIndex) =>
+          currentIndex === stepIndex ? value : step
+        );
+
+        return { ...game, steps: nextSteps };
+      })
+    );
+  }
+
+  function addStep(gameIndex: number): void {
+    setGames((prev) =>
+      prev.map((game, itemIndex) =>
+        itemIndex === gameIndex ? { ...game, steps: [...game.steps, ""] } : game
+      )
+    );
+  }
+
+  function removeStep(gameIndex: number, stepIndex: number): void {
+    setGames((prev) =>
+      prev.map((game, itemIndex) => {
+        if (itemIndex !== gameIndex) {
+          return game;
+        }
+
+        const nextSteps = game.steps.filter((_, index) => index !== stepIndex);
+        return { ...game, steps: nextSteps.length > 0 ? nextSteps : [""] };
+      })
+    );
+  }
+
+  async function copyJson(): Promise<void> {
+    const payload = JSON.stringify({ games: games.map(sanitizeGame) }, null, 2);
+    try {
+      await navigator.clipboard.writeText(payload);
+      setStatus("Đã copy JSON.");
+    } catch {
+      setStatus("Copy thất bại. Trình duyệt chặn clipboard.");
+    }
+  }
+
+  function downloadJson(): void {
+    const payload = JSON.stringify({ games: games.map(sanitizeGame) }, null, 2);
+    const fileName = "games.json";
+
+    try {
+      const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
+      const blobUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+
+      anchor.href = blobUrl;
+      anchor.download = fileName;
+      anchor.style.display = "none";
+
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+
+      URL.revokeObjectURL(blobUrl);
+      setStatus("Đã tải games.json");
+    } catch (error) {
+      setStatus("Tải games.json thất bại.");
+      const message = error instanceof Error ? error.message : "Unknown error";
+      window.alert(`Không thể tải file games.json.\nChi tiết: ${message}`);
+    }
+  }
+
+  function onImportButtonClick(): void {
+    fileInputRef.current?.click();
+  }
+
+  async function handleImportFile(event: ChangeEvent<HTMLInputElement>): Promise<void> {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const raw: unknown = JSON.parse(text);
+      const parsed = parseGamesData(raw);
+      setGames(parsed.games);
+      setStatus(`Import thành công ${parsed.games.length} game(s).`);
+    } catch (error) {
+      setStatus("Import thất bại.");
+      const message = error instanceof Error ? error.message : "JSON không hợp lệ.";
+      window.alert(`Không thể import file JSON.\nChi tiết: ${message}`);
+    } finally {
+      event.target.value = "";
+    }
+  }
+
+  const filteredIndexes = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) {
+      return games.map((_, index) => index);
+    }
+
+    return games
+      .map((game, index) => ({ game, index }))
+      .filter(({ game }) => game.name.trim().toLowerCase().includes(q))
+      .map(({ index }) => index);
+  }, [games, search]);
+
+  const prettyJson = useMemo(
+    () => JSON.stringify({ games: games.map(sanitizeGame) }, null, 2),
+    [games]
+  );
 
   return (
-    <div style={{ maxWidth: 1280, margin: "0 auto", padding: 24 }}>
-      <h1 style={{ fontSize: 34, fontWeight: 700, marginBottom: 8 }}>
-        Admin Form Pro v99 hướng dẫn
-      </h1>
-      <p style={{ color: "#555", marginBottom: 24 }}>
-        Hướng dẫn nhập nội dung game, tải file <code>games.json</code> và cập nhật vào
-        <code> public/data/games.json</code>.
-      </p>
+    <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950">
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8">
+        <header className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Admin Panel</h1>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            Quản lý dữ liệu game và xuất file games.json.
+          </p>
+        </header>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.1fr 0.9fr",
-          gap: 24,
-          alignItems: "start",
-        }}
-      >
-        <div
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: 14,
-            padding: 16,
-            background: "#fff",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              marginBottom: 16,
-            }}
-          >
-            <h2 style={{ fontSize: 24, fontWeight: 700 }}>Danh sách game</h2>
-            <button onClick={addGame} style={primaryBtn} type="button">
+        <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={addGame}
+              className="rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-500"
+            >
               + Thêm game
             </button>
-          </div>
-
-          {games.map((game, index) => (
-            <div
-              key={`${game.publisher}-${game.name}-${index}`}
-              style={{
-                border: "1px solid #e5e5e5",
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 16,
-                background: "#fafafa",
-              }}
+            <button
+              type="button"
+              onClick={copyJson}
+              className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-500"
             >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: 12,
-                }}
-              >
-                <strong>Game #{index + 1}</strong>
-                <button
-                  onClick={() => removeGame(index)}
-                  style={dangerBtn}
-                  type="button"
-                >
-                  Xóa
-                </button>
-              </div>
-
-              <Label title="Publisher">
-                <input
-                  value={game.publisher}
-                  onChange={(e) =>
-                    updateField(index, "publisher", e.target.value)
-                  }
-                  style={inputStyle}
-                  placeholder="VD: IGG, Garena, Tencent"
-                />
-              </Label>
-
-              <Label title="Tên game">
-                <input
-                  value={game.name}
-                  onChange={(e) => updateField(index, "name", e.target.value)}
-                  style={inputStyle}
-                  placeholder="Tên game"
-                />
-              </Label>
-
-              <Label title="Platform">
-                <select
-                  value={game.platform}
-                  onChange={(e) =>
-                    updateField(index, "platform", e.target.value)
-                  }
-                  style={inputStyle}
-                >
-                  <option>All platform</option>
-                  <option>Android</option>
-                  <option>iOS</option>
-                  <option>PC</option>
-                  <option>Steam</option>
-                  <option>PS5</option>
-                </select>
-              </Label>
-
-              <Label title="Login option">
-                <select
-                  value={game.loginOption}
-                  onChange={(e) =>
-                    updateField(index, "loginOption", e.target.value)
-                  }
-                  style={inputStyle}
-                >
-                  <option>Unlink</option>
-                  <option>Not unlink</option>
-                  <option>Login by other ways</option>
-                </select>
-              </Label>
-
-              <Label title="Warning">
-                <textarea
-                  value={game.warning}
-                  onChange={(e) =>
-                    updateField(index, "warning", e.target.value)
-                  }
-                  rows={3}
-                  style={textareaStyle}
-                  placeholder="Nội dung cảnh báo"
-                />
-              </Label>
-
-              <div style={{ marginBottom: 12 }}>
-                <div style={labelTitle}>Step 1</div>
-                <input
-                  value={game.steps[0] || ""}
-                  onChange={(e) => updateStep(index, 0, e.target.value)}
-                  style={inputStyle}
-                  placeholder="Bước 1"
-                />
-              </div>
-
-              <div style={{ marginBottom: 12 }}>
-                <div style={labelTitle}>Step 2</div>
-                <input
-                  value={game.steps[1] || ""}
-                  onChange={(e) => updateStep(index, 1, e.target.value)}
-                  style={inputStyle}
-                  placeholder="Bước 2"
-                />
-              </div>
-
-              <div style={{ marginBottom: 12 }}>
-                <div style={labelTitle}>Step 3</div>
-                <input
-                  value={game.steps[2] || ""}
-                  onChange={(e) => updateStep(index, 2, e.target.value)}
-                  style={inputStyle}
-                  placeholder="Bước 3"
-                />
-              </div>
-
-              <Label title="Image URL">
-                <input
-                  value={game.image}
-                  onChange={(e) => updateField(index, "image", e.target.value)}
-                  style={inputStyle}
-                  placeholder="https://..."
-                />
-              </Label>
-
-              <Label title="Video URL (embed)">
-                <input
-                  value={game.video}
-                  onChange={(e) => updateField(index, "video", e.target.value)}
-                  style={inputStyle}
-                  placeholder="https://www.youtube.com/embed/..."
-                />
-              </Label>
-            </div>
-          ))}
-        </div>
-
-        <div
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: 14,
-            padding: 16,
-            background: "#fff",
-            position: "sticky",
-            top: 20,
-          }}
-        >
-          <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12 }}>
-            JSON output
-          </h2>
-
-          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-            <button onClick={copyJson} style={primaryBtn} type="button">
-              {copied ? "Đã copy" : "Copy JSON"}
+              Copy JSON
             </button>
-            <button onClick={downloadJson} style={secondaryBtn} type="button">
+            <button
+              type="button"
+              onClick={downloadJson}
+              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+            >
               Tải games.json
             </button>
+            <button
+              type="button"
+              onClick={onImportButtonClick}
+              className="rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-500"
+            >
+              Import games.json
+            </button>
+            <button
+              type="button"
+              onClick={() => void autoLoadGames()}
+              className="rounded-md bg-zinc-700 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-600"
+            >
+              Reload từ current JSON
+            </button>
           </div>
 
-          <pre
-            style={{
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              background: "#0b0b0b",
-              color: "#f5f5f5",
-              padding: 14,
-              borderRadius: 12,
-              minHeight: 420,
-              fontSize: 13,
-              overflow: "auto",
-            }}
-          >
-            {prettyJson}
-          </pre>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            onChange={(event) => void handleImportFile(event)}
+            className="hidden"
+          />
 
-          <div style={{ marginTop: 14, color: "#555", lineHeight: 1.7 }}>
-            1. Nhập dữ liệu ở cột trái
-            <br />
-            2. Bấm tải file <strong>games.json</strong>
-            <br />
-            3. Thay nội dung file <code>public/data/games.json</code>
-            <br />
-            4. GitHub sẽ tự deploy lại website
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[2fr_1fr]">
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search game name..."
+              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none ring-blue-500 transition focus:ring-2 dark:border-zinc-700 dark:bg-zinc-950"
+            />
+            <div className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
+              {loading ? "Loading..." : status}
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
+
+        <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
+          <div className="space-y-4">
+            {filteredIndexes.map((gameIndex) => {
+              const game = games[gameIndex];
+              return (
+                <article
+                  key={`game-editor-${gameIndex}`}
+                  className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                      Game #{gameIndex + 1}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => removeGame(gameIndex)}
+                      className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500"
+                    >
+                      Xóa
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <input
+                      value={game.publisher}
+                      onChange={(event) =>
+                        updateField(gameIndex, "publisher", event.target.value)
+                      }
+                      placeholder="Publisher"
+                      className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                    />
+                    <input
+                      value={game.name}
+                      onChange={(event) => updateField(gameIndex, "name", event.target.value)}
+                      placeholder="Game Name"
+                      className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                    />
+                    <select
+                      value={game.platform}
+                      onChange={(event) =>
+                        updateField(gameIndex, "platform", event.target.value)
+                      }
+                      className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                    >
+                      {PLATFORM_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      value={game.loginOption}
+                      onChange={(event) =>
+                        updateField(gameIndex, "loginOption", event.target.value)
+                      }
+                      placeholder="Login Option"
+                      className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                    />
+                    <input
+                      value={game.image}
+                      onChange={(event) => updateField(gameIndex, "image", event.target.value)}
+                      placeholder="Image URL"
+                      className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950 md:col-span-2"
+                    />
+                    <input
+                      value={game.video}
+                      onChange={(event) => updateField(gameIndex, "video", event.target.value)}
+                      placeholder="Video Embed URL"
+                      className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950 md:col-span-2"
+                    />
+                  </div>
+
+                  <textarea
+                    value={game.warning}
+                    onChange={(event) => updateField(gameIndex, "warning", event.target.value)}
+                    placeholder="Warning"
+                    rows={3}
+                    className="mt-3 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                  />
+
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Steps</p>
+                      <button
+                        type="button"
+                        onClick={() => addStep(gameIndex)}
+                        className="rounded-md border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      >
+                        + Add step
+                      </button>
+                    </div>
+                    {game.steps.map((step, stepIndex) => (
+                      <div key={`game-${gameIndex}-step-${stepIndex}`} className="flex gap-2">
+                        <input
+                          value={step}
+                          onChange={(event) =>
+                            updateStep(gameIndex, stepIndex, event.target.value)
+                          }
+                          placeholder={`Step ${stepIndex + 1}`}
+                          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeStep(gameIndex, stepIndex)}
+                          className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/30"
+                        >
+                          Xóa
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              );
+            })}
+
+            {filteredIndexes.length === 0 && (
+              <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+                Không có game nào khớp từ khóa tìm kiếm.
+              </div>
+            )}
+          </div>
+
+          <aside className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 className="mb-2 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+              JSON Preview
+            </h2>
+            <pre className="max-h-[70vh] overflow-auto rounded-md bg-zinc-950 p-3 text-xs text-zinc-100">
+              {prettyJson}
+            </pre>
+          </aside>
+        </section>
+      </main>
     </div>
   );
 }
-
-function Label({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label style={{ display: "block", marginBottom: 12 }}>
-      <div style={labelTitle}>{title}</div>
-      {children}
-    </label>
-  );
-}
-
-const labelTitle: React.CSSProperties = {
-  marginBottom: 6,
-  fontWeight: 600,
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 8,
-  border: "1px solid #ccc",
-  outline: "none",
-  fontSize: 14,
-  background: "#fff",
-};
-
-const textareaStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  borderRadius: 8,
-  border: "1px solid #ccc",
-  outline: "none",
-  fontSize: 14,
-  resize: "vertical",
-  background: "#fff",
-};
-
-const primaryBtn: React.CSSProperties = {
-  padding: "10px 14px",
-  borderRadius: 8,
-  border: "1px solid #111",
-  background: "#111",
-  color: "#fff",
-  cursor: "pointer",
-};
-
-const secondaryBtn: React.CSSProperties = {
-  padding: "10px 14px",
-  borderRadius: 8,
-  border: "1px solid #ccc",
-  background: "#fff",
-  color: "#111",
-  cursor: "pointer",
-};
-
-const dangerBtn: React.CSSProperties = {
-  padding: "6px 10px",
-  borderRadius: 8,
-  border: "1px solid #d33",
-  background: "#fff",
-  color: "#d33",
-  cursor: "pointer",
-};
